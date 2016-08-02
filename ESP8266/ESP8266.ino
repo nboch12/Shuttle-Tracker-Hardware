@@ -1,11 +1,20 @@
 /*
   Use ESP8266 microcontroller to run FONA 3G/GPS board
  */
+
+#include <ESP8266WiFi.h>
+ 
 extern "C" {
   #include "user_interface.h"
 }
 
-os_timer_t myTimer;
+// WiFi Variables
+const char WiFiAPPSK[]="ECE420";
+WiFiServer server(80);
+
+// Timer for FONA calls
+os_timer_t fonaTimer;
+
 String inputString = "";         // a string to hold incoming data
 boolean stringComplete = false;  // whether the string is complete
 
@@ -22,25 +31,77 @@ float Converted_Latitude;
 float Converted_Longitude;
 char snd[255];
 
+// Get connected devices
+//struct station_info *stat_info;
+
+/*
+unsigned char softap_stations_cnt;
+struct station_info *stat_info;
+struct ip_addr *IPaddress;
+uint32 uintaddress;*/
+
 void setup() {
-  // initialize serial:
+  // Initialize Serial:
   Serial.begin(115200);
-  // reserve 200 bytes for the inputString:
+  
+  // Reserve 200 bytes for the inputString:
   inputString.reserve(200);
-  delay(15000);
-  //Serial.print("Start Listening\n\r");
 
-  os_timer_setfn(&myTimer, timerCallback, NULL);
-  os_timer_arm(&myTimer, 10000, true );
+  // Initiate timer for FONA commands
+  os_timer_setfn(&fonaTimer, timerCallback, NULL);
+  os_timer_arm(&fonaTimer, 5000, true);
 
-  fonaConfig();
-  //delay(10000);
-  gpsLooper();
+  // Get WiFi Station info
+  //stat_info = wifi_softap_get_station_info();
+
+  // 15 Sec wait to change pins from Arduino to FONA
+  // ( Development only )
+  //delay(15000);
+
+  
+  //fonaConfig();
+
+  // WiFi Setup
+  initHardware();
+  setupWiFi();
+  server.begin();
+  
+  
+  //gpsLooper();
 }
 
 void loop() {
   // print the string when a newline arrives:
   serialEvent();
+
+  WiFiClient client = server.available();
+  if(!client)
+  {
+    return;
+  }
+
+  // Read the first line of the request
+  String req = client.readStringUntil('/r');
+  client.flush();
+
+  //soft_stations_cnt = wifi_softap_get_station_num();
+  //stat_info = wifi_softap_get_station_info();
+  
+
+  // Prepare the HTTP response
+  String s = "HTTP:/1.1 200 OK\r\n";
+  s += "Content-Type: text/html\r\n\r\n";
+  s += "<!DOCTYPE HTML>\r\n<html>\r\n";
+  
+  s += "ESP Welcome Screen!\n";
+ 
+  s += "</html>\n";
+
+  //stat_info = STAILQ_NEXT(stat_info, next);
+  
+  // Send the response to the client
+  client.print(s);
+  delay(1);
   
 }
 
@@ -138,15 +199,6 @@ void convertGPS(){
   Converted_Longitude = longDecimal - longDegrees;
   
 }
-
-/*
- Timeout event for the timer
- */
-void timerCallback(void *pArg ) {
-  //serialWrite();
- // queryGPS();
-}
-
 /*
  Writes snd buffer to serial
  */
@@ -168,16 +220,12 @@ void fonaConfig() {
   strncpy(snd, str2, sizeof(str2));
   serialWrite();
 
-  
-
 }
 
 void queryGPS() {
-  //Serial.printf("--- Get GPS Information ---\r\n\n");
   char str[] = "AT+CGPSINFO\r\n";
   strncpy(snd, str, sizeof(str));
   serialWrite();
-  
 }
 
 void gpsLooper() {
@@ -186,4 +234,31 @@ void gpsLooper() {
     delay(3000);
   }
 }
+
+void setupWiFi()
+{
+  WiFi.mode(WIFI_AP);
+
+  String WiFiName = "Shuttle Tracker";
+  char APName[WiFiName.length()+1];
+  memset(APName, 0, WiFiName.length()+1);
+
+  for( int i=0; i<WiFiName.length(); i++ )
+  {
+    APName[i] = WiFiName.charAt(i);
+  }
+
+  WiFi.softAP(APName, WiFiAPPSK);
+}
+
+void initHardware()
+{
+  
+}
+
+void timerCallback(void *pArg)
+{
+  queryGPS();
+}
+
 
