@@ -47,27 +47,30 @@ void setup() {
   // Reserve 200 bytes for the inputString:
   inputString.reserve(200);
 
-  // Initiate timer for FONA commands
-  os_timer_setfn(&fonaTimer, timerCallback, NULL);
-  os_timer_arm(&fonaTimer, 5000, true);
+ 
 
   // Get WiFi Station info
   //stat_info = wifi_softap_get_station_info();
 
   // 15 Sec wait to change pins from Arduino to FONA
   // ( Development only )
-  //delay(15000);
-
+ // delay(15000);
   
-  //fonaConfig();
+  
+  fonaConfig();
+  delay(10000);
 
-  // WiFi Setup
+  // Initiate timer for FONA commands
+  os_timer_setfn(&fonaTimer, timerCallback, NULL);
+  os_timer_arm(&fonaTimer, 5000, true);
+
+  //WiFi Setup
   initHardware();
   setupWiFi();
   server.begin();
   
   
-  //gpsLooper();
+  gpsLooper();
 }
 
 void loop() {
@@ -220,12 +223,44 @@ void fonaConfig() {
   strncpy(snd, str2, sizeof(str2));
   serialWrite();
 
+  char str3[]= "AT+CHTTPSSTOP\r\n";
+  strncpy(snd, str3, sizeof(str3));
+  serialWrite();
+
+  delay(1000);
+
+  char str4[] = "AT+CHTTPSTART\r\n";
+  strncpy(snd, str4, sizeof(str4));
+  serialWrite();
+  delay(1000);
+
+  char str5[] = "AT+CHTTPSOPSE=\"73.130.107.82\",8081,1\r\n";
+  strncpy(snd, str5, sizeof(str5));
+  serialWrite();
+  delay(1000);
+
 }
 
 void queryGPS() {
   char str[] = "AT+CGPSINFO\r\n";
   strncpy(snd, str, sizeof(str));
   serialWrite();
+  delay(1000);
+
+  char str2[] = "AT+CHTTPSSEND=800\r\n";
+  strncpy(snd,str2, sizeof(str2));
+  serialWrite();
+  delay(1000);
+
+  //char str3[] = "POST /shuttletracker/shuttleTracker HTTP/1.1\r\nHost: 73.130.107.82:8081\r\nConnection: keep-alive\r\nContent-Length: 94\r\nCache-Control: max-age=0\r\nOrigin: http://73.130.107.82:8081\r\nUpgrade-Insecure-Requests: 1\r\nUser-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36\r\nContent-Type: application/x-www-form-urlencoded\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r\nReferer: http://73.130.107.82:8081/shuttletracker/shuttleTracker\r\nAccept-Encoding: gzip, deflate\r\nAccept-Language: en-US,en;q=0.8,ru;q=0.6\r\n\r\nid=3&mac=aa&latitude=39.947135&longitude=-76.729867&submitData=Submit+Data\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n";
+  /*strncpy(snd,str3, sizeof(str3));
+  serialWrite();
+  delay(1000);*/
+  
+  char str4[] = "AT+CHTTPSSEND\r\n";
+  strncpy(snd,str4, sizeof(str4));
+  serialWrite();
+  delay(1000);
 }
 
 void gpsLooper() {
