@@ -32,6 +32,7 @@ float Converted_Longitude;
 String Conv_Lat;
 String Conv_Long;
 char snd[1024];
+char completePost[800];
 
 // Get connected devices
 //struct station_info *stat_info;
@@ -56,12 +57,11 @@ void setup() {
 
   // 15 Sec wait to change pins from Arduino to FONA
   // ( Development only )
-  delay(10000);
+  delay(15000);
   
   
   fonaConfig();
 
-  delay(5000);
 
   // Initiate timer for FONA commands
   //os_timer_setfn(&fonaTimer, timerCallback, NULL);
@@ -78,31 +78,50 @@ void loop() {
   // print the string when a newline arrives:
   serialEvent();
 
+
+  char str5[] = "AT+CHTTPSOPSE=\"73.130.107.82\",8081,1\r\n";
+  strncpy(snd, str5, sizeof(str5));
+  serialWrite();
+  snd[0] = (char)0;
+  
+  delay(500);
+
   char st[] = "AT+CGPSINFO\r\n";
   strncpy(snd, st, sizeof(st));
   serialWrite();
-  delay(3000);
-
-  char st2[] = "AT+CHTTPSSEND=800\r\n";
-  strncpy(snd,st2, sizeof(st2));
-  serialWrite();
   delay(1000);
 
-  String st3 = "POST /shuttletracker/shuttleTracker HTTP/1.1\r\nHost: 73.130.107.82:8081\r\nConnection: keep-alive\r\nContent-Length: 94\r\nCache-Control: max-age=0\r\nOrigin: http://73.130.107.82:8081\r\nUpgrade-Insecure-Requests: 1\r\nUser-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36\r\nContent-Type: application/x-www-form-urlencoded\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r\nReferer: http://73.130.107.82:8081/shuttletracker/shuttleTracker\r\nAccept-Encoding: gzip, deflate\r\nAccept-Language: en-US,en;q=0.8,ru;q=0.6\r\n\r\nid=3&mac=aa&latitude=39.9477008&longitude=-76.7349586&submitData=Submit+Data\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n";
+  
+  ParseSerialData();
+
+  if( Converted_Latitude < 30.0000 )
+    return;
+
+  char st2[] = "AT+CHTTPSSEND=685\r\n";
+  strncpy(snd,st2, sizeof(st2));
+  serialWrite();
+  delay(500);
+
+    
+  String st3 = "POST /shuttletracker/shuttleTracker HTTP/1.1\r\nHost: 73.130.107.82:8081\r\nConnection: keep-alive\r\nContent-Length: 94\r\nCache-Control: max-age=0\r\nOrigin: http://73.130.107.82:8081\r\nUpgrade-Insecure-Requests: 1\r\nUser-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36\r\nContent-Type: application/x-www-form-urlencoded\r\nAccept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8\r\nReferer: http://73.130.107.82:8081/shuttletracker/shuttleTracker\r\nAccept-Encoding: gzip, deflate\r\nAccept-Language: en-US,en;q=0.8,ru;q=0.6\r\n\r\nid=3&mac=aa&latitude=" + Conv_Lat + "&longitude="+ Conv_Long + "&submitData=Submit+Data\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n";
   st3.toCharArray(snd, st3.length());
   serialWrite();
-  delay(3000);
-
+  delay(500);
+  
   char st5[] = "AT+CHTTPSSEND?\r\n";
   strncpy(snd,st5, sizeof(st5));
   serialWrite();
-  delay(3000);
-  
+  delay(500);
+ 
   char st4[] = "AT+CHTTPSSEND\r\n";
   strncpy(snd,st4, sizeof(st4));
   serialWrite();
-  delay(3000);
+  delay(500);
 
+/*
+ char st5[] = "AT+CHTTPSRECV=1";
+ strncpy(snd, st5, sizeof(st5));
+ serialWrite();*/
  
 
   /*
@@ -208,7 +227,7 @@ void convertGPS(){
   float latDecimal = latitudeDecimal.toFloat();
   float latDegrees = latitudeDegrees.toFloat();
 
-  latDegrees = latDegrees/60.0000;
+  latDegrees = latDegrees/60.00000;
 
   Converted_Latitude = latDecimal + latDegrees;
   
@@ -233,25 +252,12 @@ void convertGPS(){
   char temp_lat[10];
   char temp_long[11];
 
-  dtostrf(Converted_Latitude, 6, 4, temp_lat);
-  dtostrf(Converted_Longitude, 6, 4, temp_long);
+  dtostrf(Converted_Latitude, 6, 5, temp_lat);
+  dtostrf(Converted_Longitude, 6, 5, temp_long);
 
   Conv_Lat = String(temp_lat);
-  /*for( int i=0; i<6; i++ )
-  {
-    Conv_Lat += temp_lat[i];
-  }
-
-  for( int i=0; i<7; i++ )
-  {
-    Conv_Lat += temp_long[i];
-  }*/
-
   Conv_Long = String(temp_long);
 
-  
-
-  
 }
 /*
  Writes snd buffer to serial
@@ -284,20 +290,21 @@ void fonaConfig() {
   snd[0] = (char)0;
 
   delay(1000);
-*/
-  char str4[] = "AT+CHTTPSSTART\r\n";
-  strncpy(snd, str4, sizeof(str4));
-  serialWrite();
-  snd[0] = (char)0;
-  
-  delay(1000);
 
   char str5[] = "AT+CHTTPSOPSE=\"73.130.107.82\",8081,1\r\n";
   strncpy(snd, str5, sizeof(str5));
   serialWrite();
   snd[0] = (char)0;
   
-  delay(5000);
+  delay(3000);*/
+
+  
+  char str4[] = "AT+CHTTPSSTART\r\n";
+  strncpy(snd, str4, sizeof(str4));
+  serialWrite();
+  snd[0] = (char)0;
+  
+  delay(1000);
 
 }
 
@@ -348,5 +355,6 @@ void timerCallback(void *pArg)
 {
   queryGPS();
 }
+
 
 
